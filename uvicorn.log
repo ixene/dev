@@ -1,0 +1,13 @@
+nohup: ignoring input
+INFO:     Will watch for changes in these directories: ['/home/ubuntulinux/dev']
+INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
+INFO:     Started reloader process [5744] using StatReload
+INFO:     Started server process [5748]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:41008 - "GET /objects/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52180 - "GET /objects/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52194 - "POST /objects/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52198 - "POST /objects/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52214 - "PUT /objects/cube1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52226 - "DELETE /objects/sph1 HTTP/1.1" 200 OK

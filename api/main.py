@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import files
+from api.routes import objects
 
 app = FastAPI(title="ixene-dev API")
 
@@ -11,8 +11,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(objects.router)
+
 @app.get("/")
 def root():
-    return {"status": "ok", "message": "ixene-dev backend active"}
-
-app.include_router(files.router)
+    return {"status":"ok","message":"ixene-dev backend active"}
