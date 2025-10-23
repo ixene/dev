@@ -1,3 +1,11 @@
+<<<<<<< HEAD
+__pycache__/
+node_modules/
+dist/
+build/
+.env
+*.wasm
+=======
 # Logs
 logs
 *.log
@@ -22,3 +30,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+>>>>>>> e174b64 (Initial commit: plugin UI system, scene toggle, and architecture setup)

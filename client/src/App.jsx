@@ -1,97 +1,77 @@
-import { useEffect, useState, useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { createRenderer } from "./RendererManager";
+import { createWorld } from "./worlds/WorldManager";
+import { ExoticManager } from "/src/engine/ExoticManager.js";
+import PluginUI from "./ui/PluginUI";
 
 export default function App() {
-  const mountRef = useRef(null);
-  const [objs, setObjs] = useState([]);
+  const mountRef = useRef();
+  const [showUI, setShowUI] = useState(false);
+  const [worldType, setWorldType] = useState("grid");
 
   useEffect(() => {
-    fetch("http://localhost:8080/objects/")
-      .then(r => r.json())
-      .then(d => setObjs(d.objects || []))
-      .catch(() => setObjs([]));
-  }, []);
+    if (showUI) return;
 
-  useEffect(() => {
-    const el = mountRef.current;
-    if (!el) return;
+    const container = mountRef.current;
+    const scene = createWorld(worldType);
+    const cam = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    cam.position.set(3, 3, 5);
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, el.clientWidth / el.clientHeight, 0.1, 1000);
-    camera.position.set(3,3,6);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(el.clientWidth, el.clientHeight);
-    el.appendChild(renderer.domElement);
+    const renderer = createRenderer(container);
+    const controls = new OrbitControls(cam, renderer.domElement);
 
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5,10,7);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040));
+    const exotic = new ExoticManager(scene);
+    exotic.loadModule("asymptote", "/src/plugins/asymptote.js");
 
-    const meshes = {};
-
-    function makeMesh(o) {
-      let mesh;
-      if (o.type === "cube") {
-        const geo = new THREE.BoxGeometry(1,1,1);
-        const mat = new THREE.MeshStandardMaterial({ color: o.meta?.color || 0xff6600 });
-        mesh = new THREE.Mesh(geo, mat);
-      } else if (o.type === "sphere") {
-        const geo = new THREE.SphereGeometry(o.meta?.radius || 0.6, 32, 16);
-        const mat = new THREE.MeshStandardMaterial({ color: o.meta?.color || 0x3399ff });
-        mesh = new THREE.Mesh(geo, mat);
-      } else {
-        const geo = new THREE.BoxGeometry(1,1,1);
-        const mat = new THREE.MeshStandardMaterial({ color: 0x888888 });
-        mesh = new THREE.Mesh(geo, mat);
-      }
-      mesh.position.set(o.x||0, o.y||0, o.z||0);
-      mesh.name = o.id;
-      return mesh;
-    }
-
-    // add existing objects
-    objs.forEach(o => {
-      const m = makeMesh(o);
-      meshes[o.id] = m;
-      scene.add(m);
-    });
-
-    // simple orbit-like control (mouse drag)
-    let isDown = false, last = {x:0,y:0};
-    el.addEventListener("mousedown", e => { isDown=true; last={x:e.clientX,y:e.clientY}; });
-    window.addEventListener("mouseup", () => isDown=false);
-    window.addEventListener("mousemove", e => {
-      if (!isDown) return;
-      const dx = (e.clientX - last.x) * 0.005;
-      const dy = (e.clientY - last.y) * 0.005;
-      scene.rotation.y += dx;
-      scene.rotation.x += dy;
-      last={x:e.clientX,y:e.clientY};
-    });
-
-    function animate() {
+    const clock = new THREE.Clock();
+    const animate = () => {
+      const dt = clock.getDelta();
+      if (scene.userData.update) scene.userData.update(dt);
+      exotic.update(dt);
+      controls.update();
+      renderer.render(scene, cam);
       requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
+    };
     animate();
 
-    // cleanup
-    return () => {
-      el.removeChild(renderer.domElement);
-      renderer.dispose();
+    const handleResize = () => {
+      cam.aspect = container.clientWidth / container.clientHeight;
+      cam.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
     };
-  }, [objs]);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      container.removeChild(renderer.domElement);
+      exotic.dispose();
+    };
+  }, [worldType, showUI]);
 
   return (
-    <div style={{display:"flex",height:"100vh"}}>
-      <div ref={mountRef} style={{flex:1}} />
-      <div style={{width:300, padding:12, background:"#111", color:"#fff", fontFamily:"monospace"}}>
-        <h3>Objects</h3>
-        <ul>
-          {objs.map(o => <li key={o.id}>{o.id} ({o.type}) @{o.x},{o.y},{o.z}</li>)}
-        </ul>
+    <>
+      <div style={{ width: "100vw", height: "100vh" }}>
+        {!showUI && <div ref={mountRef} style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }} />}
+        <button
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            padding: "6px 12px",
+            background: "#222",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            zIndex: 10,
+          }}
+          onClick={() => setShowUI(!showUI)}
+        >
+          {showUI ? "Exit Marketplace" : "Open Plugins"}
+        </button>
+        {showUI && <PluginUI />}
       </div>
-    </div>
+    </>
   );
 }

@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: ixene-api
+    ports:
+      - "8080:8080"
+    networks:
+      - ixene-net
+
+  client:
+    build: ./client
+    container_name: ixene-client
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://ixene-api:8080
+    depends_on:
+      - api
+    networks:
+      - ixene-net
+
+networks:
+  ixene-net:
+    driver: bridge
